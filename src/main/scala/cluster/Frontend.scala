@@ -5,9 +5,9 @@ import cluster.Cluster.{ Add, BackendRegistration }
 import com.typesafe.config.ConfigFactory
 
 class Frontend extends Actor{
-  var backends = IndexedSeq.empty[ActorRef]
+  var backends: Seq[ActorRef] = IndexedSeq.empty[ActorRef]
   
-  def receive = {
+  def receive: Receive = {
     case Add if backends.isEmpty =>
       println("Service unreachable, cluster doesnt have backend node to handle it")
     case addOp:Add =>
