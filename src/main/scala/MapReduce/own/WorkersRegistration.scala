@@ -1,11 +1,6 @@
-package own
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.scaladsl.Behaviors
+package MapReduce.own
 
-import scala.concurrent.ExecutionContext 
-
-object WorkersRegistration {
+object WorkersRegistration {/*
   sealed trait cmd extends CborSerializable
   case class getCurrent(replyTo:ActorRef[Master.cmd]) extends cmd
   final case class ExecutionContextSwitch(executionContext:ExecutionContext) extends cmd
@@ -23,5 +18,5 @@ object WorkersRegistration {
   }
   def setup():Behavior[Nothing] = Behaviors.setup{ ctx =>
     WorkersRegistration()
-  }
+  }*/
 }

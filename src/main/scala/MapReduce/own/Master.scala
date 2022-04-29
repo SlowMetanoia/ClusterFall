@@ -1,7 +1,7 @@
-package own
+package MapReduce.own
 
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.typed.scaladsl.Behaviors
+import MapReduce.CborSerializable
+import akka.actor.typed.ActorRef
 
 import scala.collection.immutable
 import scala.util.Try
@@ -32,16 +32,21 @@ object Master {
   
   final case class FinalAnswer[Out](value:Out,errors:Seq[(Throwable,ActorRef[NodeWorker.cmd])])
   final case class currentWorkers(workers:Set[ActorRef[NodeWorker.cmd]]) extends cmd
-  
+  /*
   def setup(
              workDivision: immutable.Iterable[_] => immutable.Iterable[Iterable[_]],
              messageQueueLength:Int
            ):Behavior[cmd] = Behaviors.setup[cmd]{ ctx=>
     Behaviors.receiveMessage{
       case ift:IFullTask =>
-        awaitingForWorkers(workDivision(ift.data).map(workElements=>
+        awaitingForWorkers(
+          workDivision(ift.data).map(workElements=>
                                                         NodeWorker.WorkPart(
-                                                          workElements.map(_.asInstanceOf[ift.TIn]), ift.function, ift.reduce, ctx.self)), messageQueueLength)
+                                                          workElements.map(_.asInstanceOf[ift.TIn]),
+                                                          ift.function,
+                                                          ift.reduce,
+                                                          ctx.self)),
+          messageQueueLength)
       case _ => throw new Exception("something went very wrong while idling")
     }
   }
@@ -55,5 +60,5 @@ object Master {
   def workInitialize(cw:Set[ActorRef[NodeWorker.cmd]]):Behavior[cmd] = Behaviors.setup[cmd]{ ctx=>
     for(i<-0 to messagesPerWorker)
       cw.foreach(_ ! )
-  }
+  }*/
 }

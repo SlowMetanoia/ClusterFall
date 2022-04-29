@@ -1,4 +1,4 @@
-package own
+package MapReduce.own
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
