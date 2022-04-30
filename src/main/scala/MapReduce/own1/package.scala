@@ -12,5 +12,11 @@ package object own1 {
                                      reduceFunction:(Out,Out)=>Out,
                                      nextLevelReducer:ActorRef[WorkMess]) extends WorkMess
   final case class WorkResult[Out](outputData:Try[Out]) extends WorkMess
+  final case class MapReduceContext(receptionist: ActorRef[Any],
+                                       MapFunction:Iterable[_]=>Iterable[Iterable[_]])
+  final case class CalculationContext[In,Out](
+                                               wp:WorkPart[In,Out],
+                                               mapReduceContext: MapReduceContext)
+  final case class WorkersList(workerList:List[ActorRef[WorkMess]])
+  object InitializationDone
 }
-
