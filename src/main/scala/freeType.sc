@@ -1,3 +1,5 @@
+import MapReduce.own2.WorkItem
+import akka.actor.typed.ActorRef
 
 trait message
 
@@ -18,3 +20,10 @@ def c1:PartialFunction[message,Unit] = {
 
 c0(Thr(4,5))
 c0(Fut(1,(a:Int)=> println((a + 1))) )
+
+Iterable(1,3,5,25,6,7).min
+
+def startWork(actorsLoad:Map[Int,Set[ActorRef[WorkItem[_,_]]]]): Int = {
+      val minimum = actorsLoad.keySet.min
+      val worker = actorsLoad(minimum).head
+  }

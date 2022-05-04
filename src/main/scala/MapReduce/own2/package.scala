@@ -5,6 +5,7 @@ import akka.actor.typed.ActorRef
 import scala.collection.immutable
 
 package object own2 {
+  type Worker = ActorRef[WorkItem[_,_]]
   trait CDASCommand extends CborSerializable
   trait NodeWorkerCommand extends CDASCommand
   trait MasterCommand extends CDASCommand
@@ -18,5 +19,6 @@ package object own2 {
                                     f:In=>Out,
                                     fr:(Out,Out)=>Out,
                                     replyTo:ActorRef[CDASCommand]) extends CDASCommand
-  final case class Result[Out](outData:Out) extends CDASCommand
+  final case class Result[Out](outData:Out,worker:Worker) extends CDASCommand
+  case object MessagesAreNoMore
 }
