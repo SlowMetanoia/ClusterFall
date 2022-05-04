@@ -7,11 +7,12 @@ import akka.actor.typed.scaladsl.Behaviors
 
 object WorkersReceptionist {
   case object GiveMeWorkers
-  def apply():Behavior[Any] = Behaviors.setup{
+  def apply():Behavior[Any] = Behaviors.setup[Any]{
     Behaviors.receiveMessage{
       case NodeStart.NodeServiceKey.Listing(listing)=>
         Behaviors.same
     }
+    Behaviors.same
   }
   def setup:Behavior[Any] = Behaviors.setup{ ctx =>
     ctx.system.receptionist ! Receptionist.Subscribe(NodeStart.NodeServiceKey,ctx.self)
