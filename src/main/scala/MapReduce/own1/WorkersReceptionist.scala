@@ -1,10 +1,5 @@
 package MapReduce.own1
-
-import akka.actor.typed.Behavior
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
-import akka.actor.typed.receptionist.Receptionist.Subscribe
-import akka.actor.typed.scaladsl.Behaviors
-
+/*
 object WorkersReceptionist {
   case object GiveMeWorkers
   def apply():Behavior[Any] = Behaviors.setup[Any]{
@@ -20,3 +15,4 @@ object WorkersReceptionist {
     WorkersReceptionist()
   }
 }
+*/
