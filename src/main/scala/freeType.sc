@@ -1,6 +1,7 @@
 import MapReduce.own2.WorkItem
 import akka.actor.typed.ActorRef
 
+import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Promise
 import scala.concurrent.duration.Duration
@@ -39,3 +40,18 @@ prms.future.onComplete(res=> println(res))
 var al:Map[Int,Set[String]] = Map(0->Set("a","b","c","d"))
 al = al + (1 -> Set("a")) + (0 -> (al(0) - "a"))
 al
+
+val f:Int=>Int = _ + 4
+
+def fuckThisShitIAmOut[In,Out](f:In=>Out):In=>Out = {
+  val out = new ObjectOutputStream(new FileOutputStream("/Users/alice/tmp/test.obj"))
+  out.writeObject(f)
+  out.close()
+
+  val in = new ObjectInputStream(new FileInputStream("/Users/alice/tmp/test.obj"))
+  val f0 = in.readObject().asInstanceOf[In => Out]
+  in.close()
+  f0
+}
+
+fuckThisShitIAmOut(f)(10)

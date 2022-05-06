@@ -17,6 +17,7 @@ object Balancer {
         println(s"work inited with $rl")
         ctx.self ! wi
         prepareForWork(wi.replyTo, Map(0 -> rl))
+
     }
   }
   
@@ -25,6 +26,7 @@ object Balancer {
                       actorsLoad: Map[ Int, Set[ Worker ] ],
                       storedMessages: Seq[ WorkItem[ _, _ ] ] = Seq.empty
                     ): Behavior[ Any ] = Behaviors.setup[ Any ] { ctx =>
+    println("balancer is up")
     Behaviors.receiveMessage {
       case wi: WorkItem[ _, _ ] =>
         val (newActorsLoad, worker, minimal) = increasedMinimalLoaded(actorsLoad)

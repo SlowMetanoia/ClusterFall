@@ -16,7 +16,6 @@ object Master {
           balancer ! WorkItem(dp,f,rf,balancer)
           counter += 1
         }
-        balancer ! MessagesAreNoMore
         reduce(balancer,counter,rf, resultPlace = resultPlace)
     }
   }
@@ -40,6 +39,7 @@ object Master {
             resultPlace
           )
         else {
+          balancer ! MessagesAreNoMore
           println("reduce ended")
           resultPlace.complete(Try{value.get})
           setup(balancer)

@@ -20,7 +20,7 @@ package object own2 {
   final case class WorkItem[In,Out](data:immutable.Iterable[In],
                                     f:In=>Out,
                                     fr:(Out,Out)=>Out,
-                                    replyTo:ActorRef[CDASCommand]) extends CDASCommand with CborSerializable
+                                    replyTo:ActorRef[CDASCommand]) extends CDASCommand
   final case class Result[Out](outData:Out,worker:Worker) extends CDASCommand
   case object MessagesAreNoMore
 }
