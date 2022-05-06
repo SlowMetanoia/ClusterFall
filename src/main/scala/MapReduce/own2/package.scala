@@ -3,6 +3,7 @@ package MapReduce
 import akka.actor.typed.ActorRef
 
 import scala.collection.immutable
+import scala.concurrent.Promise
 
 package object own2 {
   type Worker = ActorRef[WorkItem[_,_]]
@@ -13,12 +14,13 @@ package object own2 {
                                        data:immutable.Iterable[In],
                                        f:In=>Out,
                                        rf:(Out,Out)=>Out,
-                                       mf:immutable.Iterable[In]=>immutable.Iterable[immutable.Iterable[In]]
+                                       mf:immutable.Iterable[In]=>immutable.Iterable[immutable.Iterable[In]],
+                                       resultPlace:Promise[Out]
                                      ) extends MasterCommand
   final case class WorkItem[In,Out](data:immutable.Iterable[In],
                                     f:In=>Out,
                                     fr:(Out,Out)=>Out,
-                                    replyTo:ActorRef[CDASCommand]) extends CDASCommand
+                                    replyTo:ActorRef[CDASCommand]) extends CDASCommand with CborSerializable
   final case class Result[Out](outData:Out,worker:Worker) extends CDASCommand
   case object MessagesAreNoMore
 }

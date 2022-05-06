@@ -14,6 +14,7 @@ object Balancer {
       case rl: Receptionist.Listing =>
         setup(rl.serviceInstances(ApplicationSetup.NodeServiceKey))
       case wi: WorkItem[ _, _ ] =>
+        println(s"work inited with $rl")
         ctx.self ! wi
         prepareForWork(wi.replyTo, Map(0 -> rl))
     }
@@ -40,6 +41,8 @@ object Balancer {
           prepareForWork(master, actorsLoad, storedMessages.tail)
         }
         else prepareForWork(master, decreasedWorkerLoad(actorsLoad,result.worker), storedMessages)
+      case _:Receptionist.Listing => Behaviors.same
+      case MessagesAreNoMore => setup(actorsLoad.values.toSet.flatten)
     }
   }
   
@@ -49,8 +52,8 @@ object Balancer {
     val minimal = actorsLoad.groupBy(_._2.nonEmpty)(true).keys.min
     val worker = actorsLoad(minimal).head
     (
-      actorsLoad.updated(minimal, actorsLoad(minimal) - worker)
-                .updated(minimal + 1, actorsLoad(minimal + 1) + worker),
+      actorsLoad + (minimal -> (actorsLoad(minimal) - worker)) +
+        (minimal + 1 -> (actorsLoad.getOrElse(minimal + 1,Set.empty[Worker]) + worker)),
       worker,
       if(actorsLoad(minimal).tail.nonEmpty) minimal else minimal + 1
     )
@@ -61,7 +64,7 @@ object Balancer {
                            worker: Worker
                          ): Map[ Int, Set[ Worker ] ] = {
     val load = actorsLoad.find(_._2.contains(worker)).get._1
-    actorsLoad.updated(load, actorsLoad(load) - worker)
-              .updated(load - 1, actorsLoad(load) + worker)
+    actorsLoad + (load-> (actorsLoad(load) - worker)) +
+      (load - 1 -> (actorsLoad(load) + worker))
   }
 }
