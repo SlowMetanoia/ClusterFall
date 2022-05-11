@@ -11,16 +11,15 @@ object NodeWorker {
   def setup(implicit executionContext: ExecutionContext):Behavior[WorkItem[_,_]] = {
     Behaviors.setup[WorkItem[_,_]]{ctx =>
       Behaviors.receiveMessage{
-        case WorkItem(data,f,fr,replyTo) =>
-          ctx.log.debug{ s"Work message ${WorkItem(data, f , fr , replyTo).hashCode()} accepted"}
+        case WorkItem(data, func, reduceFunction, replyTo) =>
+          ctx.log.debug{ s"Work message ${WorkItem(data, func, reduceFunction, replyTo).hashCode()} accepted"}
           Future.reduceLeft{
             data.map{
               di=>
-                Future(f(di))
+                Future(func(di))
             }
-          }(fr).onComplete{ result =>
+          }(reduceFunction).onComplete{ result =>
             replyTo ! Result(result.get,ctx.self)
-            //todo: errors handling???
           }
           Behaviors.same
       }
