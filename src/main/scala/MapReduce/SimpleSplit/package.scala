@@ -5,7 +5,7 @@ import akka.actor.typed.ActorRef
 import scala.collection.immutable
 import scala.concurrent.Promise
 
-package object own2 {
+package object SimpleSplit {
   type Worker = ActorRef[WorkItem[_,_]]
   trait CDASCommand extends CborSerializable
   trait NodeWorkerCommand extends CDASCommand
@@ -20,7 +20,9 @@ package object own2 {
   final case class WorkItem[In,Out](data:immutable.Iterable[In],
                                     f:In=>Out,
                                     fr:(Out,Out)=>Out,
-                                    replyTo:ActorRef[CDASCommand]) extends CDASCommand
+                                    replyTo:ActorRef[CDASCommand]) extends CborSerializable
   final case class Result[Out](outData:Out,worker:Worker) extends CDASCommand
+  final case class RouterInit(master: ActorRef[CDASCommand])
   case object MessagesAreNoMore
+  class NoWorkersException extends Exception
 }

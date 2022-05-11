@@ -1,4 +1,4 @@
-package MapReduce.own2
+package MapReduce.SimpleSplit
 
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
@@ -10,11 +10,11 @@ import scala.collection.immutable.Iterable
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
 import scala.util.{Failure, Success, Try}
-
-object ApplicationSetup {
+//todo: API
+object SplitExecution {
   val executionContextSelection: ExecutionContextExecutor = global
   val NodeServiceKey: ServiceKey[ WorkItem[ _, _ ] ] = ServiceKey("MapReduceWorker")
-  val master: Promise[ActorRef[CDASCommand]] = Promise[ActorRef[CDASCommand]]
+  val master: Promise[ActorRef[CDASCommand ] ] = Promise[ActorRef[CDASCommand]]
 
   private
   object RootBehaviour {
@@ -27,9 +27,9 @@ object ApplicationSetup {
         ctx.system.receptionist ! Receptionist.Register(NodeServiceKey, node)
       }
       if(cluster.selfMember.hasRole("Master")) {
-        val balancer = ctx.spawn(Balancer.setup(), "Balancer")
-        val master = ctx.spawn(Master.setup(balancer), "Master")
-        ApplicationSetup.master.complete(Try(master))
+        val router = ctx.spawn(Router.setup(), "Router")
+        val master = ctx.spawn(Master.setup(router), "Master")
+        SplitExecution.master.complete(Try(master))
       }
       Behaviors.empty[ Nothing ]
     }
@@ -51,11 +51,13 @@ object ApplicationSetup {
       akka.cluster.roles = [$role]
       """)
       .withFallback(ConfigFactory.load())
-    println(ConfigFactory.load("application"))
     
     ActorSystem[ Nothing ](RootBehaviour(), "ClusterSystem", config)
   }
-  def splitExecution[In,Out](
+  
+  
+  
+  def start[In,Out](
                               data:Iterable[In],
                               mf:Iterable[In]=>Iterable[Iterable[In]],
                               rf:(Out,Out)=>Out,
@@ -65,7 +67,7 @@ object ApplicationSetup {
     master.future.onComplete{
       case Success(master) =>
         master ! MasterInit(data,f,rf,mf,result)
-        println("master reached")
+        ctx.log.debug("master reached")
       case Failure(exception) => throw exception
     }(global)
     result.future

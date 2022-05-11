@@ -1,4 +1,4 @@
-package MapReduce.own2
+package MapReduce.SimpleSplit
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
@@ -7,43 +7,44 @@ import scala.concurrent.Promise
 import scala.util.Try
 
 object Master {
-  def setup(balancer: ActorRef[Any]):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx=>
+  def setup( router: ActorRef[Any]):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx=>
     Behaviors.receiveMessage{
       case MasterInit(data,f,rf,mf,resultPlace) =>
-        println("master inited")
+        ctx.log.info("master inited")
         var counter = 0
+        router ! RouterInit(ctx.self)
         mf(data).foreach{dp=>
-          balancer ! WorkItem(dp,f,rf,balancer)
+          router ! WorkItem(dp, f, rf, router)
           counter += 1
         }
-        reduce(balancer,counter,rf, resultPlace = resultPlace)
+        reduce(router, counter, rf, resultPlace = resultPlace)
     }
   }
   
   def reduce[Out](
                    balancer: ActorRef[Any],
-                   number:Int,
+                   messagesLeft:Int,
                    rf:(Out,Out)=>Out,
                    value:Option[Out] = None,
                    resultPlace:Promise[Out]
                  ):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx =>
-    println("reduce started")
+    ctx.log.debug(s"messages remain:$messagesLeft")
+    if(messagesLeft > 0)
     Behaviors.receiveMessage{
       case r:Result[Out] =>
-        if(number>0)
-          reduce(
-            balancer,
-            number,
-            rf,
-            reduceStep(rf,value,r.outData),
-            resultPlace
+        reduce(
+          balancer,
+          messagesLeft -1,
+          rf,
+          reduceStep(rf,value,r.outData),
+          resultPlace
           )
-        else {
-          balancer ! MessagesAreNoMore
-          println("reduce ended")
-          resultPlace.complete(Try{value.get})
-          setup(balancer)
-        }
+    }
+    else {
+      balancer ! MessagesAreNoMore
+      ctx.log.info("reduce ended")
+      resultPlace.complete(Try { value.get })
+      setup(balancer)
     }
   }
   
@@ -51,5 +52,4 @@ object Master {
       case Some(oldV) => Some(rf(oldV,newV))
       case None => Some(newV)
     }
-  
 }
