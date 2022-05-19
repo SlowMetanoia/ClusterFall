@@ -24,8 +24,6 @@ case class EducationalTrajectory(sections:Seq[Section]){
 case class CourseChain(courses:Seq[ICourse])
 
 object EducationalTrajectoryGenerator{
-
-  
   def generateET(n:Int,s:Seq[Int],k:Seq[Seq[Int]]):EducationalTrajectory = {
     abstractChains
       .andThen(_.map(ac=> generateChain(ac.toList,???,???)))
@@ -35,13 +33,15 @@ object EducationalTrajectoryGenerator{
       .andThen(releaseResult)(k)
   }
   
-  def abstractChains:Seq[Seq[Int]]=>Seq[Seq[Int]] = sections=>
+  def abstractChains:Seq[Seq[Int]]=>Seq[Seq[Int]] = sections =>
     for (j<-0 until sections.map(_.length).max ) yield
       for (i<-sections.indices if sections(i).length>j) yield sections(i)(j)
-      
-  def generateChain(inputs:List[Int],
-                    initialCourseGen:Int=>CourseChain,
-                    sequentialCourseGen:(Int,CourseChain)=>CourseChain):CourseChain = {
+
+  def generateChain(
+                     inputs:List[Int],
+                     initialCourseGen:Int=>CourseChain,
+                     sequentialCourseGen:(Int,CourseChain)=>CourseChain
+                   ):CourseChain = {
     if(inputs.nonEmpty) {
       @tailrec
       def recGen( leftInputs: List[ Int ], chain: CourseChain ): CourseChain = leftInputs match {
@@ -53,7 +53,15 @@ object EducationalTrajectoryGenerator{
       CourseChain(Seq.empty)
   }
   def appendChains(l:Seq[CourseChain],r:Seq[CourseChain]):Seq[CourseChain] = l++r
-  def expandChains:Seq[CourseChain]=>Seq[CourseChain] = ???
+  def expandChains:Seq[CourseChain]=>Seq[CourseChain] = { chains=>
+    val n = chains.map(_.courses.length).max
+    chains.map( chain =>
+      CourseChain(
+        for (i<-0 to n) yield
+        if(i<chain.courses.length) chain.courses(i) else EmptyCourse
+      )
+    )
+  }
   def balanceChains(chains:Seq[CourseChain]):Seq[Seq[ICourse]] = ???
   def balanceTable(table:Seq[Seq[ICourse]]):Seq[Seq[ICourse]] = ???
   def releaseResult(table:Seq[Seq[ICourse]]):EducationalTrajectory = ???

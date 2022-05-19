@@ -17,10 +17,11 @@ object testRun extends App{
   SplitExecution.main(Array("test"))
   
   //ждём сколько-то, пока кластер поднимается (в ручную, так как это нестандартное состояние)
-  sleep(5000)
+  sleep(10000)
   
-  //API
+  //APIPA
   val result = SplitExecution.start(data, mf, rf, f)
+
   //вывод
   result.onComplete(result => println(result))(global)
 }
