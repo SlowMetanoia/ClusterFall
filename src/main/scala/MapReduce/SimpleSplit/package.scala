@@ -24,5 +24,6 @@ package object SimpleSplit {
   final case class Result[Out](outData:Out,worker:Worker) extends CDASCommand
   final case class RouterInit(master: ActorRef[CDASCommand])
   case object MessagesAreNoMore
+  case class rdy(ref: ActorRef[CDASCommand]) extends CDASCommand
   class NoWorkersException extends Exception
 }

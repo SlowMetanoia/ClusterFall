@@ -7,7 +7,7 @@ import scala.concurrent.Promise
 import scala.util.Try
 
 object Master {
-  def setup( router: ActorRef[Any]):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx=>
+  def setup( router: ActorRef[Any], queue:ActorRef[CDASCommand]):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx=>
     Behaviors.receiveMessage{
       case MasterInit(data,f,rf,mf,resultPlace) =>
         ctx.log.info("master inited")
@@ -17,7 +17,7 @@ object Master {
           router ! WorkItem(dp, f, rf, router)
           counter += 1
         }
-        reduce(router, counter, rf, resultPlace = resultPlace)
+        reduce(router, counter, rf, resultPlace = resultPlace,queue = queue)
     }
   }
   
@@ -26,7 +26,8 @@ object Master {
                    messagesLeft:Int,
                    rf:(Out,Out)=>Out,
                    value:Option[Out] = None,
-                   resultPlace:Promise[Out]
+                   resultPlace:Promise[Out],
+                   queue:ActorRef[CDASCommand]
                  ):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx =>
     ctx.log.debug(s"messages remain:$messagesLeft")
     if(messagesLeft > 0)
@@ -37,14 +38,19 @@ object Master {
           messagesLeft -1,
           rf,
           reduceStep(rf,value,r.outData),
-          resultPlace
+          resultPlace,
+          queue
           )
+      case mi:MasterInit[_,_]=>
+        queue ! mi
+        Behaviors.same
     }
     else {
       balancer ! MessagesAreNoMore
       ctx.log.info("reduce ended")
       resultPlace.complete(Try { value.get })
-      setup(balancer)
+      queue ! rdy(ctx.self)
+      setup(balancer,queue)
     }
   }
   

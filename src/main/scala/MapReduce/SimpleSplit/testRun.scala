@@ -12,16 +12,14 @@ object testRun extends App{
   def f:Int=>Int = _ + 1
   
   println(mf( data ).map(_.map(f).reduce(rf)).reduce(rf))
-  
-  //Поднимаем кластер локально
-  SplitExecution.main(Array("test"))
-  
-  //ждём сколько-то, пока кластер поднимается (в ручную, так как это нестандартное состояние)
-  sleep(10000)
-  
-  //APIPA
-  val result = SplitExecution.start(data, mf, rf, f)
 
+  LocalClusterStartup.main(Array.empty)
+  sleep(5000)
+  //APIPA
+  val result = SplitExecution(data, mf, rf, f)
+  val result2 = SplitExecution(data, mf, rf, f)
   //вывод
   result.onComplete(result => println(result))(global)
+  result2.onComplete(result => println(result))(global)
+  sleep(10000)
 }
