@@ -16,20 +16,23 @@ case object EmptyCourse extends ICourse{
   override val in = Set.empty
   override val out = Set.empty
 }
-case class Section(courses:Set[ExternalCourse])
+case class Section(courses:Set[ICourse])
 case class EducationalTrajectory(sections:Seq[Section]){
   def courses:Set[ICourse] = sections.flatMap(_.courses).toSet
   def KASes:Set[KAS] = sections.flatMap(_.courses.flatMap(c=> c.in ++ c.out)).toSet
 }
-case class CourseChain(courses:Seq[ICourse])
+case class CourseChain(courses:Seq[ICourse]){
+  def length = courses.length
+}
 
 object EducationalTrajectoryGenerator{
   def generateET(n:Int,s:Seq[Int],k:Seq[Seq[Int]]):EducationalTrajectory = {
     abstractChains
       .andThen(_.map(ac=> generateChain(ac.toList,???,???)))
-      .andThen(expandChains)
-      .andThen(balanceChains)
-      .andThen(balanceTable)
+      //.andThen(expandChains)
+      //.andThen(balanceChains)
+      //.andThen(balanceTable)
+      .andThen(tableFromChains(_,s))
       .andThen(releaseResult)(k)
   }
   
@@ -64,7 +67,16 @@ object EducationalTrajectoryGenerator{
   }
   def balanceChains(chains:Seq[CourseChain]):Seq[Seq[ICourse]] = ???
   def balanceTable(table:Seq[Seq[ICourse]]):Seq[Seq[ICourse]] = ???
-  def releaseResult(table:Seq[Seq[ICourse]]):EducationalTrajectory = ???
+  def tableFromChains(chains:Seq[CourseChain],crsN:Seq[Int]):Seq[Seq[ICourse]] = {
+    var flat  = chains.flatMap(_.courses)
+    crsN.map{n=>
+      val section = flat.take(n)
+      flat = flat.drop(n)
+      section
+    }
+  }
+  def releaseResult(table:Seq[Seq[ICourse]]):EducationalTrajectory =
+    EducationalTrajectory(table.map(cs=>Section(cs.toSet)))
 }
 
 val sections = Seq(
