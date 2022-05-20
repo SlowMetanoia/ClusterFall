@@ -1,21 +1,20 @@
 package MapReduce.SimpleSplit
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.cluster.typed.Cluster
 import com.typesafe.config.ConfigFactory
 
-import java.lang.Thread.sleep
 import scala.collection.immutable.Iterable
 import scala.concurrent.ExecutionContext.global
-import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
+import scala.util.{ Failure, Success }
 
 object ClusterInteractions {
   val executionContextSelection: ExecutionContextExecutor = global
   val NodeServiceKey: ServiceKey[ WorkItem[ _, _ ] ] = ServiceKey("MapReduceWorker")
-  val master: Promise[ ActorRef[ CDASCommand ] ] = Promise[ ActorRef[ CDASCommand ] ]
+  private val master: Promise[ ActorRef[ CDASCommand ] ] = Promise[ ActorRef[ CDASCommand ] ]
 
   private
   object RootBehaviour {
@@ -39,7 +38,7 @@ object ClusterInteractions {
     case Array(role, port, ip) => startup(role, port.toInt, ip)
     case Array("test") =>
       ( 1 to 3 ).foreach(i => startup("Slave", 25250 + i))
-      startup("Master", 25539)
+      //startup("Master", 25539)
     case _ => throw new IllegalArgumentException("wrong initializing arguments")
   }
   
@@ -58,6 +57,9 @@ object ClusterInteractions {
     
     ActorSystem[ Nothing ](RootBehaviour(), "ClusterSystem", config)
   }
+  
+  def MasterInitialisation(): ActorSystem[ Nothing ] = startup("Master", 52309, "127.0.0.1")
+  def NodeInitialisation(): ActorSystem[ Nothing ] = startup("Slave", 52250, "127.0.0.1")
   
   def start[ In, Out ](
                         data: Iterable[ In ],

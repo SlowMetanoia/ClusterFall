@@ -4,6 +4,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
 
+
 object Router {
   val maxMessages = 3
   def setup: Behavior[ Any ] = Behaviors.setup[ Any ] { ctx =>
@@ -17,7 +18,7 @@ object Router {
         waitingState(rl.serviceInstances(ClusterInteractions.NodeServiceKey))
       case RouterInit(master) =>
         if(rl.nonEmpty) {
-          ctx.log.info(s"work inited with $rl and ${ for (i <- 1 to maxMessages; j <- rl) yield j }")
+          ctx.log.info(s"work inited with nodes:\n${ rl.mkString("\n") }")
           workingState(master, actorsQueue = for (i <- 1 to maxMessages; j <- rl) yield j)
         } else throw new NoWorkersException
     }

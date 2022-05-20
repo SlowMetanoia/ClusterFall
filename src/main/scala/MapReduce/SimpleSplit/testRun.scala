@@ -11,14 +11,27 @@ object testRun extends App{
   def rf(a:Int,b:Int):Int = a + b
   def f:Int=>Int = _ + 1
   
+  
   println(mf( data ).map(_.map(f).reduce(rf)).reduce(rf))
-
-  LocalClusterStartup.main(Array.empty)
+  
+  
+  //поднимаем ноды кластера локально
+  LocalClusterNodesStartup.main(Array("test"))
+  
+  //инициализируем мастера
+  ClusterInteractions.MasterInitialisation()
+  //ждём, пока кластер не придёт в себя
   sleep(5000)
-  //APIPA
+  
+  
+  
+  //API. Для запуска исполнения вычислений нужно, чтобы в рамках процесса был инициирован Master и где-то были ноды, видимые кластеру.
   val result = SplitExecution(data, mf, rf, f)
   val result2 = SplitExecution(data, mf, rf, f)
-  //вывод
+  
+  
+  
+  //Вывод результатов.
   result.onComplete(result => println(result))(global)
   result2.onComplete(result => println(result))(global)
   sleep(10000)
