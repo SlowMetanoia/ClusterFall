@@ -16,19 +16,16 @@ object testRun extends App{
   
   
   //поднимаем ноды кластера локально
-  LocalClusterNodesStartup.main(Array("test"))
+  //LocalClusterNodesStartup.main(Array("test"))
   
   //инициализируем мастера
   ClusterInteractions.MasterInitialisation()
-  //ждём, пока кластер не придёт в себя
-  sleep(5000)
   
   
   
   //API. Для запуска исполнения вычислений нужно, чтобы в рамках процесса был инициирован Master и где-то были ноды, видимые кластеру.
   val result = SplitExecution(data, mf, rf, f)
   val result2 = SplitExecution(data, mf, rf, f)
-  
   
   
   //Вывод результатов.

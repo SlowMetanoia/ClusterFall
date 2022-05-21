@@ -41,7 +41,7 @@ object Master {
           resultPlace,
           queue
           )
-      case mi:MasterInit[_,_]=>
+      case mi:MasterInit[_,_] =>
         queue ! mi
         Behaviors.same
     }

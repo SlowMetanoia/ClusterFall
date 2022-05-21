@@ -20,7 +20,12 @@ object Router {
         if(rl.nonEmpty) {
           ctx.log.info(s"work inited with nodes:\n${ rl.mkString("\n") }")
           workingState(master, actorsQueue = for (i <- 1 to maxMessages; j <- rl) yield j)
-        } else throw new NoWorkersException
+        } else {
+          ctx.self ! RouterInit(master)
+          Behaviors.same
+        }
+      case wi:WorkItem[_,_] => ctx.self!wi
+        Behaviors.same
     }
   }
   def workingState(
