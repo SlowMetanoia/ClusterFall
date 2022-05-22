@@ -8,6 +8,7 @@ object GraphGenerator {
   //Структуры данных
   trait KAS {
     val id: Int
+    override def toString: String = s"KAS($id)"
   }
   
   case class ExternalKAS( id: Int, name: String ) extends KAS
@@ -18,6 +19,10 @@ object GraphGenerator {
     val id: Int
     val in: Set[ KAS ]
     val out: Set[ KAS ]
+  
+    override def toString: String =
+      s"Course($id; IN:${in.toSeq.sortWith(_.id < _.id).mkString(",")}|#|" +
+      s"OUT:${out.toSeq.sortWith(_.id < _.id).mkString(",")})"
   }
   
   case
@@ -55,7 +60,7 @@ object GraphGenerator {
     
     def KASes: Set[ KAS ] = sections.flatMap(_.courses.flatMap(c => c.in ++ c.out)).toSet
     
-    def asGraph: Nothing = ???
+    def asGraph = ???
   }
   
   case
@@ -70,61 +75,57 @@ object GraphGenerator {
   case class ChainResponse( ci: CourseChain, associatedET: Int )
   
   object EducationalTrajectoryGeneratorAPI {
-    def generateChainsInitialData: Seq[ Seq[ Int ] ] => Seq[ ChainInitialData ] = sections => {
-      var curKASid = 0
-      var curCourseId = 0
-      //fixme some id wrong things are happening here (*)
-      for (j <- 0 until sections.map(_.length).max) yield {
-        val inOuts = for (i <- sections.indices
-                          if sections(i).length > j) yield {
-          curCourseId += 1
-          curKASid += sections(i)(j)
-          sections(i)(j)
-        }
-        val lco = inOuts.sum / inOuts.length
-        curCourseId += 1
-        curKASid += lco
-        ChainInitialData(curCourseId, curKASid, inOuts.appended(lco).toList)
-      }
-    }
+    type Table = Seq[ Seq[ Int ] ]
+    def rotateTable: Table => Table = table =>
+      for (index <- 0 until table.map(_.length).max) yield
+        for (vector <- table if vector.length > index) yield vector(index)
+  
+    def generateLast: Seq[ Int ] => Seq[ Int ] = seq => seq.appended(seq.sum / seq.length)
+    def completeRotatedTable: Table => Table = _.map(generateLast)
+    def chainsInitFromRotatedTable: Table => Seq[ ChainInitialData ] = tbl =>
+      tbl.scanLeft(ChainInitialData(0, 0, List.empty))(
+        ( prevInit, inputs ) =>
+          ChainInitialData(
+            prevInit.courseIdInit + prevInit.inOuts.length,
+            prevInit.kasIdInit + prevInit.inOuts.sum,
+            inputs.toList
+            )).tail
+  
+    def generateChain: ChainInitialData => CourseChain = { chainInit =>
+      var (courseId, kasId) = (chainInit.courseIdInit, chainInit.kasIdInit)
     
-    def generateChain: ChainInitialData => CourseChain = courseInit => {
-      var (cid, kid, _) = ChainInitialData.unapply(courseInit).get
-      //fixme or here (*)
-      def generateKASes( n: Int ): Set[ KAS ] = {
-        val result = ( for (id <- kid until kid + n) yield InternalKAS(id) ).toSet
-        kid += n
-        //это бред полнейший, но иначе не работает.
-        result.asInstanceOf[ Set[ KAS ] ]
-      }
-      
-      def generateCourse( in: Set[ KAS ], out: Set[ KAS ] ): ICourse = {
-        val result = InternalCourse(cid, in, out)
-        cid += 1
+      def generateKASes( n: Int ): Seq[ KAS ] = {
+        val result = for (id <- kasId until kasId + n) yield InternalKAS(id)
+        kasId += n
         result
       }
-      
-      val in1 :: out1 :: outs = courseInit.inOuts.map(generateKASes)
-      
-      CourseChain(
-        outs.scanLeft(generateCourse(in1, out1))(( course, outs ) => generateCourse(course.out, outs))
-        )
-    }
     
-    def tableFromChains: (Seq[ CourseChain ], Seq[ Int ]) => Seq[ Seq[ ICourse ] ] = { ( chains, crsN ) =>
-      var allCourses = chains.flatMap(_.courses)
-      crsN.map { n =>
-        val section = allCourses.take(n)
-        allCourses = allCourses.drop(n)
-        section
+      def generateCourse( in: Set[ KAS ], out: Set[ KAS ] ): ICourse = {
+        val result = InternalCourse(courseId, in, out)
+        courseId += 1
+        result
       }
-    }
     
-    def releaseResult( chains: Seq[ CourseChain ], csrN: Seq[ Int ] ): EducationalTrajectory =
-      EducationalTrajectory(tableFromChains(chains, csrN).map(section => Section(section.toSet)))
+      val in1 :: out1 :: tail = chainInit.inOuts.map(generateKASes)
+      CourseChain(tail.scanLeft(
+        generateCourse(in1.toSet, out1.toSet)
+        )(
+        ( prevCourse, newKASes ) =>
+          generateCourse(prevCourse.out, newKASes.toSet)
+        ))
+    }
+  
+    def sectionsFromChains: Seq[ CourseChain ] => Seq[ Section ] =  chains => {
+      (for (index <- 0 until chains.map(_.length).max) yield
+        Section((for (chain <- chains if chain.length > index) yield chain.courses(index)).toSet))
+    }
+  
+  
+    def ETFromSections: Seq[ Section ] => EducationalTrajectory = EducationalTrajectory
   }
   
   object EducationalTrajectoryGeneratorExecutionControl {
+    import EducationalTrajectoryGeneratorAPI._
     val messageUnitsLimit = 1
     
     def mapperFunction[ T ]: Iterable[ T ] => Iterable[ Iterable[ T ] ] =
@@ -135,31 +136,33 @@ object GraphGenerator {
     
     def reduceFunction: ( Seq[ ChainResponse ] , Seq[ ChainResponse ]) => Seq[ ChainResponse ] = _ ++ _
     
-    def preMap: Seq[ ETGQuery ] => Seq[   ChainQuery  ] =
+    def preMap: Seq[ ETGQuery ] => Seq[ ChainQuery ] =
       _.zipWithIndex.flatMap(p =>
-                               EducationalTrajectoryGeneratorAPI
-                                 .generateChainsInitialData(p._1.k)
-                                 .map(ChainQuery(_, p._2))
-                         )
+                             rotateTable
+                               .andThen(completeRotatedTable)
+                               .andThen(chainsInitFromRotatedTable)
+                               .andThen( _.map(ChainQuery(_,p._2))
+                                        )(p._1.k)
+                             )
     
     def executeSequential: Seq[ ETGQuery ] => Seq[ EducationalTrajectory ] = queries =>
       preMap.andThen(mapperFunction)(queries)
-            .flatMap(_.map(transformationFunction).reduce(reduceFunction)).groupBy(_.associatedET)
+            .flatMap(_.map(transformationFunction).reduce(reduceFunction))
+            .groupBy(_.associatedET)
             .toSeq.sortWith(_._1 > _._1)
             .map(_._2.map(_.ci))
-            .zip(queries.map(_.s))
-            .map(p => EducationalTrajectoryGeneratorAPI.releaseResult(p._1.toSeq, p._2))
+            .map(chains=>sectionsFromChains.andThen(ETFromSections)(chains.toSeq))
             
     
     def executeInCluster: Seq[ ETGQuery ] => Future[Seq[ EducationalTrajectory ]] = queries =>
-      
-      //ClusterInteractions.MasterInitialisation()
       SimpleSplit.SplitExecution(
-        preMap(queries), mapperFunction, reduceFunction, transformationFunction).map(_.groupBy(_.associatedET)
-               .toSeq.sortWith(_._1 > _._1)
-               .map(_._2.map(_.ci))
-               .zip(queries.map(_.s))
-               .map(p => EducationalTrajectoryGeneratorAPI.releaseResult(p._1, p._2))
+        preMap(queries), mapperFunction, reduceFunction, transformationFunction)
+                 .map(_.groupBy(_.associatedET)
+                       .toSeq
+                       .sortWith(_._1 > _._1)
+                       .toSeq.sortWith(_._1 > _._1)
+                       .map(_._2.map(_.ci))
+                       .map(chains=>sectionsFromChains.andThen(ETFromSections)(chains.toSeq))
               )(global)
     
   }

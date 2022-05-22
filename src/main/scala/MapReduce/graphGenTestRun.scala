@@ -29,6 +29,8 @@ object graphGenTestRun extends App{
       s"${etgQuery.k.mkString("\n")}\n"
   }
   ClusterInteractions.MasterInitialisation()
+  
+  println(makeReadable(tdg.take(1).head))
   /*println(GraphGenerator.EducationalTrajectoryGeneratorExecutionControl.executeSequential(
     tdg.take(1).force
     ).map(_.sections.map(_.courses.mkString("\n")).mkString("\n\n")).mkString(";\n\n\n"))
