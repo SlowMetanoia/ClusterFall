@@ -10,7 +10,7 @@ object Master {
   def setup( router: ActorRef[Any], queue:ActorRef[CDASCommand]):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx=>
     Behaviors.receiveMessage{
       case MasterInit(data,f,rf,mf,resultPlace) =>
-        ctx.log.info("master inited")
+        //ctx.log.info("master inited")
         var counter = 0
         router ! RouterInit(ctx.self)
         mf(data).foreach{dp=>
@@ -29,7 +29,7 @@ object Master {
                    resultPlace:Promise[Out],
                    queue:ActorRef[CDASCommand]
                  ):Behavior[CDASCommand] = Behaviors.setup[CDASCommand]{ ctx =>
-    ctx.log.debug(s"messages remain:$messagesLeft")
+    //ctx.log.debug(s"messages remain:$messagesLeft")
     if(messagesLeft > 0)
     Behaviors.receiveMessage{
       case r:Result[Out] =>
@@ -47,7 +47,7 @@ object Master {
     }
     else {
       balancer ! MessagesAreNoMore
-      ctx.log.info("reduce ended")
+      //ctx.log.info("reduce ended")
       resultPlace.complete(Try { value.get })
       queue ! rdy(ctx.self)
       setup(balancer,queue)

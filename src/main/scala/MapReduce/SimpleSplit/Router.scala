@@ -18,7 +18,7 @@ object Router {
         waitingState(rl.serviceInstances(ClusterInteractions.NodeServiceKey))
       case RouterInit(master) =>
         if(rl.nonEmpty) {
-          ctx.log.info(s"work inited with nodes:\n${ rl.mkString("\n") }")
+          //ctx.log.info(s"work inited with nodes:\n${ rl.mkString("\n") }")
           workingState(master, actorsQueue = for (i <- 1 to maxMessages; j <- rl) yield j)
         } else {
           ctx.self ! RouterInit(master)
@@ -33,11 +33,11 @@ object Router {
                     actorsQueue: Seq[Worker],
                     messagesQueue: Seq[ WorkItem[ _, _ ] ] = Seq.empty
                   ): Behavior[ Any ] = Behaviors.setup[ Any ] { ctx =>
-    ctx.log.debug(s"now aql is ${actorsQueue.length}")
-    ctx.log.debug(s"now mql is ${messagesQueue.length}")
+    //ctx.log.debug(s"now aql is ${actorsQueue.length}")
+    //ctx.log.debug(s"now mql is ${messagesQueue.length}")
 
     if(actorsQueue.nonEmpty & messagesQueue.nonEmpty){
-      ctx.log.debug("work sent")
+      //ctx.log.debug("work sent")
       actorsQueue.head ! messagesQueue.head
       workingState(master, actorsQueue.tail, messagesQueue.tail)
     } else
@@ -45,7 +45,7 @@ object Router {
       case wi: WorkItem[ _, _ ] =>
         workingState(master,actorsQueue,messagesQueue.appended(wi))
       case result: Result[ _ ] =>
-        ctx.log.debug("result got")
+        //ctx.log.debug("result got")
         master ! result
         workingState(master,actorsQueue.appended(result.worker),messagesQueue)
       case _:Receptionist.Listing => Behaviors.same

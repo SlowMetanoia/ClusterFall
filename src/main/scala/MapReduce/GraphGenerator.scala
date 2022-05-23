@@ -1,7 +1,7 @@
 package MapReduce
 
 import scala.collection.immutable.Iterable
-import scala.concurrent.ExecutionContext.global
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 object GraphGenerator {
@@ -144,26 +144,36 @@ object GraphGenerator {
                                .andThen( _.map(ChainQuery(_,p._2))
                                         )(p._1.k)
                              )
-    
+    def educationalTrajectoryFromResponses:Iterable[ChainResponse]=>Seq[EducationalTrajectory] = { responses=>
+      responses.groupBy(_.associatedET)
+             .toSeq
+             .sortWith(_._1 > _._1)
+             .map(_._2.map(_.ci))
+             .map(chains=>sectionsFromChains.andThen(ETFromSections)(chains.toSeq))
+    }
     def executeSequential: Seq[ ETGQuery ] => Seq[ EducationalTrajectory ] = queries =>
-      preMap.andThen(mapperFunction)(queries)
-            .flatMap(_.map(transformationFunction).reduce(reduceFunction))
-            .groupBy(_.associatedET)
-            .toSeq.sortWith(_._1 > _._1)
-            .map(_._2.map(_.ci))
-            .map(chains=>sectionsFromChains.andThen(ETFromSections)(chains.toSeq))
-            
+      preMap.andThen(mapperFunction)
+            .andThen(
+              _.flatMap(
+                _.map(transformationFunction)
+                 .reduce(reduceFunction)
+                )
+              )
+            .andThen(educationalTrajectoryFromResponses)(queries)
     
     def executeInCluster: Seq[ ETGQuery ] => Future[Seq[ EducationalTrajectory ]] = queries =>
       SimpleSplit.SplitExecution(
         preMap(queries), mapperFunction, reduceFunction, transformationFunction)
-                 .map(_.groupBy(_.associatedET)
-                       .toSeq
-                       .sortWith(_._1 > _._1)
-                       .toSeq.sortWith(_._1 > _._1)
-                       .map(_._2.map(_.ci))
-                       .map(chains=>sectionsFromChains.andThen(ETFromSections)(chains.toSeq))
-              )(global)
+                 .map(educationalTrajectoryFromResponses)
     
+    def executeInLocalThreads:Seq[ETGQuery] =>Future[Seq[ EducationalTrajectory ]] = queries =>
+      Future.reduceLeft{
+        preMap
+          .andThen(mapperFunction)(queries)
+          .flatten
+          .map{query =>
+            Future { transformationFunction(query) }
+          }
+       }(reduceFunction).map(educationalTrajectoryFromResponses)
   }
 }
