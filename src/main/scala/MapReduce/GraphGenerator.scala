@@ -47,9 +47,9 @@ object GraphGenerator {
   
   case
   object EmptyCourse extends ICourse {
-    override val id = ???
-    override val in = ???
-    override val out = ???
+    override val id: Int = -1
+    override val in: Set[KAS ] = Set.empty
+    override val out: Set[KAS ] = Set.empty
   }
   
   case class Section( courses: Set[ ICourse ] )
@@ -60,7 +60,7 @@ object GraphGenerator {
     
     def KASes: Set[ KAS ] = sections.flatMap(_.courses.flatMap(c => c.in ++ c.out)).toSet
     
-    def asGraph = ???
+    def asGraph():Unit = {  }
   }
   
   case
@@ -116,8 +116,8 @@ object GraphGenerator {
     }
   
     def sectionsFromChains: Seq[ CourseChain ] => Seq[ Section ] =  chains => {
-      (for (index <- 0 until chains.map(_.length).max) yield
-        Section((for (chain <- chains if chain.length > index) yield chain.courses(index)).toSet))
+      for (index <- 0 until chains.map(_.length).max) yield
+        Section((for (chain <- chains if chain.length > index) yield chain.courses(index)).toSet)
     }
   
   

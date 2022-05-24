@@ -6,10 +6,10 @@ import MapReduce.SimpleSplit.ClusterInteractions
 import java.io.PrintWriter
 import java.lang.Thread.sleep
 import java.time.LocalTime
-import scala.concurrent.ExecutionContext.global
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
-import scala.util.Random
+import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Random }
 
 object graphGenTestRun extends App {
   
@@ -78,7 +78,7 @@ object graphGenTestRun extends App {
     )
   
   def rand(tuple: (Int, Int)) =
-    Random.nextInt(tuple._2 - tuple._1 + tuple._1)
+    Random.nextInt(tuple._2 - tuple._1 )+ tuple._1
   
   
   def generateCourseTables: DiGID => Seq[ Seq[ Seq[ Int ] ] ] = { digid =>
@@ -95,7 +95,8 @@ object graphGenTestRun extends App {
   def clusterExec:Seq[ ETGQuery ] => Seq[EducationalTrajectory] = { input=>
     Await.result( GraphGenerator
       .EducationalTrajectoryGeneratorExecutionControl
-      .executeInCluster(input), 1.minute)
+      .executeInCluster(input), 10
+      .minute)
   }
   def seqExec:Seq[ ETGQuery ] => Seq[EducationalTrajectory] = { input=>
     GraphGenerator
@@ -106,11 +107,11 @@ object graphGenTestRun extends App {
     Await.result(
       GraphGenerator
         .EducationalTrajectoryGeneratorExecutionControl
-        .executeInLocalThreads(input), 1.minute)
+        .executeInLocalThreads(input), 10.minute)
   }
   def testAndWright(out:PrintWriter,diGID: DiGID):Unit = {
     val testData = generateQueries(diGID)
-    println("started")
+    //println("started")
     var line = Seq(testData.length,
                    testData.map(_.n).sum/testData.length,
                    testData.flatMap(_.s).sum,
@@ -143,12 +144,12 @@ object graphGenTestRun extends App {
   
   ClusterInteractions.MasterInitialisation()
   //ждём, пока мастер придёт в себя
-  sleep(3000)
+  sleep(10000)
   
   var curTime: Long = 0
   def tick( ): Unit = curTime = LocalTime.now().toNanoOfDay
   
-  def tack = ( LocalTime.now().toNanoOfDay - curTime )
+  def tack =  LocalTime.now().toNanoOfDay - curTime
   
   def output: Seq[ EducationalTrajectory ] => Unit = result =>
     println(result
@@ -160,22 +161,20 @@ object graphGenTestRun extends App {
   
   
   def ScheduleExecution(minutes:Int)(ex:Exception):Unit ={
-    Future {sleep(minutes*60000);throw ex}(global)
+    Future {sleep(minutes*60000);throw ex}.onComplete {
+      case Failure(exception) => throw exception
+    }
   }
   
-  def terminateAfter(minutes:Int)(code: =>Unit) = {
+  def terminateAfter(minutes:Int)(code: =>Unit): Unit = {
     try{
       ScheduleExecution(minutes)(new Exception)
       code
     }catch{
-      case _=>()
+      case _: Throwable =>()
     }
   }
-  infiniteConstVariation(
-    variateQueries,
-    """C:\WorkData\Scala_Projects\ClusterAkk\src\main\resource\everethingQueries.csv"""
-    )
-  def testAllLocal: Unit ={
+  def testAllLocal( ): Unit ={
     def ivc(vf:DiGID=>(Int=>Int)=>LazyList[DiGID],fileName:String):Unit =
       terminateAfter(30) {
         infiniteConstVariation(vf, """C:\WorkData\Scala_Projects\ClusterAkk\src\main\resource\""" + fileName)
@@ -215,4 +214,5 @@ object graphGenTestRun extends App {
       ivd(variateQueries,"variateQueriesDLarge.csv")
     }
   }
+  testAllLocal()
 }
