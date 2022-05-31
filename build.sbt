@@ -16,5 +16,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed"           % AkkaVersion,
   "com.typesafe.akka" %% "akka-cluster-typed"         % AkkaVersion,
   "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
-  "com.typesafe.akka" %% "akka-cluster-metrics" % AkkaVersion
+  "com.typesafe.akka" %% "akka-cluster-metrics" % AkkaVersion,
+  "com.flowtick" %% "graphs-graphml" % "0.8.0",
+  "com.flowtick" %% "graphs-core" % "0.8.0"
   )

@@ -15,7 +15,7 @@ object ClusterInteractions {
   val executionContextSelection: ExecutionContextExecutor = global
   val NodeServiceKey: ServiceKey[ WorkItem[ _, _ ] ] = ServiceKey("MapReduceWorker")
   private val master: Promise[ ActorRef[ CDASCommand ] ] = Promise[ ActorRef[ CDASCommand ] ]
-
+  
   private
   object RootBehaviour {
     def apply( ): Behavior[ Nothing ] = Behaviors.setup[ Nothing ] { ctx =>
@@ -25,9 +25,9 @@ object ClusterInteractions {
         ctx.system.receptionist ! Receptionist.Register(NodeServiceKey, node)
       }
       if(cluster.selfMember.hasRole("Master")) {
-        val queue = ctx.spawn(WorkQueue.withQ(),"QueueController")
+        val queue = ctx.spawn(WorkQueue.withQ(), "QueueController")
         val router = ctx.spawn(Router.setup, "Router")
-        val master = ctx.spawn(Master.setup(router,queue), "Master")
+        val master = ctx.spawn(Master.setup(router, queue), "Master")
         ClusterInteractions.master.complete(Success(master))
       }
       Behaviors.empty[ Nothing ]
@@ -38,7 +38,7 @@ object ClusterInteractions {
     case Array(role, port, ip) => startup(role, port.toInt, ip)
     case Array("test") =>
       ( 1 to 3 ).foreach(i => startup("Slave", 25250 + i))
-      //startup("Master", 25539)
+    //startup("Master", 25539)
     case _ => throw new IllegalArgumentException("wrong initializing arguments")
   }
   
@@ -58,8 +58,9 @@ object ClusterInteractions {
     ActorSystem[ Nothing ](RootBehaviour(), "ClusterSystem", config)
   }
   
-  def MasterInitialisation(): ActorSystem[ Nothing ] = startup("Master", 52309, "127.0.0.1")
-  def NodeInitialisation(): ActorSystem[ Nothing ] = startup("Slave", 52250, "127.0.0.1")
+  def MasterInitialisation( ): ActorSystem[ Nothing ] = startup("Master", 52309, "192.168.1.8")
+  
+  def NodeInitialisation( ): ActorSystem[ Nothing ] = startup("Slave", 52250, "127.0.0.1")
   
   def start[ In, Out ](
                         data: Iterable[ In ],
